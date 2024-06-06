@@ -28,6 +28,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     const db = client.db("earnBuddy");
+    const usersCollection = db.collection("users");
 
     // jwt related api
     app.post("/jwt", async (req, res) => {
@@ -37,6 +38,21 @@ async function run() {
         expiresIn: "1h",
       });
       res.send({ token });
+    });
+
+    // user related api
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+
+      // check if user exist
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User already exist!", insertedId: null });
+      }
+
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
