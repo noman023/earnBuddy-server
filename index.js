@@ -41,6 +41,22 @@ async function run() {
     });
 
     // user related api
+    app.get("/users", async (req, res) => {
+      const userRole = req.query?.role;
+
+      // if role exist then return user of that specific role
+      if (userRole) {
+        const query = { role: userRole };
+        const usersByRole = await usersCollection.find(query).toArray();
+
+        return res.send(usersByRole);
+      }
+
+      // return all user
+      const allUsers = await usersCollection.find().toArray();
+      return res.send(allUsers);
+    });
+
     app.post("/users", async (req, res) => {
       const user = req.body;
 
