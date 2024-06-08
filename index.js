@@ -71,20 +71,24 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/users/updateRole/:id", async (req, res) => {
+    app.patch("/users/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-
-      // check if user exist
       const filter = { _id: new ObjectId(id) };
-      const updatedDoc = {
-        $set: {
-          role: data,
-        },
-      };
 
-      const result = await usersCollection.updateOne(filter, updatedDoc);
-      res.send(result);
+      // if role exist in query then update role
+      if (req.query?.role) {
+        const updatedDoc = { $set: { role: data } };
+
+        const result = await usersCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      } else if (req.query?.coins) {
+        // if coins exist in query then update coins
+        const updatedDoc = { $set: { coins: data } };
+
+        const result = await usersCollection.updateOne(filter, updatedDoc);
+        res.send(result);
+      }
     });
 
     // Send a ping to confirm a successful connection
