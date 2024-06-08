@@ -30,6 +30,7 @@ async function run() {
     const db = client.db("earnBuddy");
     const usersCollection = db.collection("users");
     const tasksCollection = db.collection("tasks");
+    const submissionCollection = db.collection("submission");
 
     // ---------------JWT RELATED API START--------------
     app.post("/jwt", async (req, res) => {
@@ -126,6 +127,22 @@ async function run() {
       return res.send(result);
     });
     // -----------------TASK RELATED API END----------------
+
+    // -----------------SUBMISSION RELATED API END----------------
+    app.get("submission", async (req, res) => {
+      const query = { workerEmail: req.query?.email };
+      const userSubmission = await submissionCollection.find(query).toArray();
+
+      return res.send(userSubmission);
+    });
+
+    app.post("submission", async (req, res) => {
+      const submissionData = req.body;
+      const result = await submissionCollection.insertOne(submissionData);
+
+      return res.send(result);
+    });
+    // -----------------SUBMISSION RELATED API END----------------
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
