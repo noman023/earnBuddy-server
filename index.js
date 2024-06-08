@@ -29,8 +29,9 @@ async function run() {
     // await client.connect();
     const db = client.db("earnBuddy");
     const usersCollection = db.collection("users");
+    const tasksCollection = db.collection("tasks");
 
-    // jwt related api
+    // ---------------JWT RELATED API START--------------
     app.post("/jwt", async (req, res) => {
       const user = req.body;
 
@@ -39,8 +40,9 @@ async function run() {
       });
       res.send({ token });
     });
+    // ------------------JWT RELATED API END-------------
 
-    // user related api
+    // ----------------USER RELATED API START-------------
     app.get("/users", async (req, res) => {
       const userRole = req.query?.role;
 
@@ -90,6 +92,32 @@ async function run() {
         res.send(result);
       }
     });
+    // ------------------USER RELATED API END------------------
+
+    // -------------------TASK RELATED API START-----------------
+    app.get("tasks", async (req, res) => {
+      const email = req.query?.email;
+
+      // if email exist in query then send tasks by filtering using that email
+      if (email) {
+        const query = { creator_email: email };
+        const userTasks = await tasksCollection.find(query).toArray();
+
+        return res.send(userTasks);
+      }
+
+      // send all tasks
+      const allTask = await tasksCollection.find().toArray();
+      return res.send(allTask);
+    });
+
+    app.post("tasks", async (req, res) => {
+      const postData = req.body;
+      const result = await tasksCollection.insertOne(postData);
+
+      return res.send(result);
+    });
+    // -----------------TASK RELATED API END----------------
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
