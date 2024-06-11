@@ -82,6 +82,21 @@ async function run() {
       next();
     }
 
+    async function verifyWorker(req, res, next) {
+      const email = req.decoded.email;
+      const query = { email: email };
+
+      const user = await usersCollection.findOne(query);
+      const isWorker = user?.role === "worker";
+
+      // if not worker
+      if (!isWorker) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      next();
+    }
+
     // ---------------MIDDLEWARES END----------------------
 
     // ---------------JWT RELATED API START--------------
