@@ -32,6 +32,28 @@ async function run() {
     const tasksCollection = db.collection("tasks");
     const submissionCollection = db.collection("submission");
 
+    // ------------MIDDLEWARES START-----------
+    const verifyToken = (req, res, next) => {
+      // if no token
+      if (!req.headers.authorization) {
+        return res.status(401).send({ message: "unauthorized access" });
+      }
+
+      // remove "Bearer" from authorization
+      const token = req.headers.authorization.split(" ")[1];
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        // if token not matched
+        if (err) {
+          return res.status(400).send({ message: "unauthorized access" });
+        }
+
+        req.decoded = decoded;
+        next();
+      });
+    };
+
+    // ---------------MIDDLEWARES END----------------------
+
     // ---------------JWT RELATED API START--------------
     app.post("/jwt", async (req, res) => {
       const user = req.body;
