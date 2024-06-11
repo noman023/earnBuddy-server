@@ -33,7 +33,7 @@ async function run() {
     const submissionCollection = db.collection("submission");
 
     // ------------MIDDLEWARES START-----------
-    const verifyToken = (req, res, next) => {
+    function verifyToken(req, res, next) {
       // if no token
       if (!req.headers.authorization) {
         return res.status(401).send({ message: "unauthorized access" });
@@ -50,9 +50,9 @@ async function run() {
         req.decoded = decoded;
         next();
       });
-    };
+    }
 
-    const verifyAdmin = async (req, res, next) => {
+    async function verifyAdmin(req, res, next) {
       const email = req.decoded.email;
       const query = { email: email };
 
@@ -65,7 +65,22 @@ async function run() {
       }
 
       next();
-    };
+    }
+
+    async function verifyTaskCreator(req, res, next) {
+      const email = req.decoded.email;
+      const query = { email: email };
+
+      const user = await usersCollection.findOne(query);
+      const isCreator = user?.role === "taskCreator";
+
+      // if not tast creator
+      if (!isCreator) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+
+      next();
+    }
 
     // ---------------MIDDLEWARES END----------------------
 
