@@ -112,6 +112,7 @@ async function run() {
     // ------------------JWT RELATED API END-------------
 
     // ----------------USER RELATED API START-------------
+    // get user(s) by query
     app.get("/users", async (req, res) => {
       const userRole = req.query?.role;
 
@@ -123,9 +124,17 @@ async function run() {
         return res.send(usersByRole);
       }
 
-      // return all user
-      const allUsers = await usersCollection.find().toArray();
-      return res.send(allUsers);
+      return res.send({ message: "something went wrong!" });
+    });
+
+    // get user role by id
+    app.get("/users/:email", async (req, res) => {
+      const { email } = req.params;
+
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+
+      return res.send(user.role);
     });
 
     app.post("/users", async (req, res) => {
