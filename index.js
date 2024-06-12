@@ -31,6 +31,7 @@ async function run() {
     const usersCollection = db.collection("users");
     const tasksCollection = db.collection("tasks");
     const submissionCollection = db.collection("submission");
+    const reviewsCollection = db.collection("reviews");
 
     // ------------MIDDLEWARES START-----------
     function verifyToken(req, res, next) {
@@ -210,6 +211,14 @@ async function run() {
       return res.send(result);
     });
     // -----------------SUBMISSION RELATED API END----------------
+
+    // -----------------REVIEWS RELATED API END----------------
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewsCollection.find().toArray();
+
+      return res.send(result);
+    });
+    // -----------------REVIEWS RELATED API END----------------
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
