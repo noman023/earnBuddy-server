@@ -130,8 +130,15 @@ async function run() {
     // get user role by id
     app.get("/users/:email", async (req, res) => {
       const { email } = req.params;
-
       const query = { email: email };
+
+      // if coins in query then send coins
+      if (req.query.coins) {
+        const user = await usersCollection.findOne(query);
+
+        return res.send({ coins: user.coins });
+      }
+
       const user = await usersCollection.findOne(query);
 
       return res.send(user.role);
@@ -173,12 +180,13 @@ async function run() {
     // ------------------USER RELATED API END------------------
 
     // -------------------TASK RELATED API START-----------------
-    app.get("tasks", async (req, res) => {
+    // get all task or task by creator email
+    app.get("/tasks", verifyToken, async (req, res) => {
       const email = req.query?.email;
 
       // if email exist in query then send tasks by filtering using that email
       if (email) {
-        const query = { creator_email: email };
+        const query = { creatorEmail: email };
         const userTasks = await tasksCollection.find(query).toArray();
 
         return res.send(userTasks);
@@ -197,11 +205,57 @@ async function run() {
       res.send(result);
     });
 
-    app.post("tasks", async (req, res) => {
+    // add task
+    app.post("/tasks", verifyToken, verifyTaskCreator, async (req, res) => {
       const postData = req.body;
-      const result = await tasksCollection.insertOne(postData);
+      const quantity = postData.quantity;
+      const amount = postData.payAmount;
+      const totalCoins = quantity * amount;
 
+      // find user
+      const query = { email: postData.creatorEmail };
+      const user = await usersCollection.findOne(query);
+
+      // update user coins
+      const newCoins = user.coins - totalCoins;
+      const updateDoc = {
+        $set: {
+          coins: newCoins,
+        },
+      };
+
+      await usersCollection.updateOne(query, updateDoc);
+
+      // insert task data
+      const result = await tasksCollection.insertOne(postData);
       return res.send(result);
+    });
+
+    app.delete("/tasks/:id", async (req, res) => {
+      const { id } = req.params;
+
+      // find specific task
+      const query = { _id: new ObjectId(id) };
+      const task = await tasksCollection.findOne(query);
+
+      // find user
+      const foundUser = await usersCollection.findOne({
+        email: task.creatorEmail,
+      });
+
+      // calculate coins and add to user account
+      const totalCoins = foundUser.coins + task.quantity * task.payAmount;
+      const updateDoc = {
+        $set: {
+          coins: totalCoins,
+        },
+      };
+
+      // update coins
+      await usersCollection.updateOne({ email: foundUser.email }, updateDoc);
+
+      const result = await tasksCollection.deleteOne(query);
+      res.send(result);
     });
     // -----------------TASK RELATED API END----------------
 
