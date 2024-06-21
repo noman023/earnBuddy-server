@@ -285,17 +285,20 @@ async function run() {
     // -----------------TASK RELATED API END----------------
 
     // -----------------SUBMISSION RELATED API END----------------
-    app.get("/submission", verifyToken, async (req, res) => {
-      // if email exist is query then filter by email
-      if (req.query.email) {
-        const query = { workerEmail: req.query.email };
+    app.get("/submission/:email", verifyToken, async (req, res) => {
+      const { email } = req.params;
+      const { role } = req.query;
 
-        const userSubmission = await submissionCollection.find(query).toArray();
-        return res.send(userSubmission);
+      let query = {};
+      // set query string based on role
+      if (role === "worker") {
+        query = { workerEmail: email, status: "approved" };
+      } else if (role === "taskCreator") {
+        query = { creatorEmail: email, status: "pending" };
       }
 
-      const all = await submissionCollection.find().toArray();
-      return res.send(all);
+      const submissions = await submissionCollection.find(query).toArray();
+      return res.send(submissions);
     });
 
     app.post("/submission", verifyToken, verifyWorker, async (req, res) => {
