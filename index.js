@@ -284,16 +284,22 @@ async function run() {
     // -----------------TASK RELATED API END----------------
 
     // -----------------SUBMISSION RELATED API END----------------
-    app.get("submission", async (req, res) => {
-      const query = { workerEmail: req.query?.email };
-      const userSubmission = await submissionCollection.find(query).toArray();
+    app.get("/submission", verifyToken, async (req, res) => {
+      // if email exist is query then filter by email
+      if (req.query.email) {
+        const query = { workerEmail: req.query.email };
 
-      return res.send(userSubmission);
+        const userSubmission = await submissionCollection.find(query).toArray();
+        return res.send(userSubmission);
+      }
+
+      const all = await submissionCollection.find().toArray();
+      return res.send(all);
     });
 
-    app.post("submission", async (req, res) => {
-      const submissionData = req.body;
-      const result = await submissionCollection.insertOne(submissionData);
+    app.post("/submission", verifyToken, verifyWorker, async (req, res) => {
+      const data = req.body;
+      const result = await submissionCollection.insertOne(data);
 
       return res.send(result);
     });
