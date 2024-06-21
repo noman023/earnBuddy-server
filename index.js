@@ -315,6 +315,46 @@ async function run() {
     });
     // -----------------WITHDRAW RELATED API END ----------------
 
+    // -----------------STATS RELATED API START ----------------
+    // get worker stats
+    app.get(
+      "/workerStats/:email",
+      verifyToken,
+      verifyWorker,
+      async (req, res) => {
+        const { email } = req.params;
+        const user = await usersCollection.findOne({ email });
+
+        // Calculate total submissions
+        const totalSubmissions = await submissionCollection.countDocuments({
+          workerEmail: email,
+        });
+
+        // Calculate total earnings from approved submissions
+        const totalEarningsPipeline = [
+          { $match: { workerEmail: email, status: "approved" } },
+          { $group: { _id: null, totalEarnings: { $sum: "$payAmount" } } },
+        ];
+
+        const earningsResult = await submissionCollection
+          .aggregate(totalEarningsPipeline)
+          .toArray();
+
+        const totalEarnings =
+          earningsResult.length > 0 ? earningsResult[0].totalEarnings : 0;
+
+        // Prepare the response
+        const response = {
+          availableCoins: user.coins,
+          totalSubmissions,
+          totalEarnings,
+        };
+
+        res.send(response);
+      }
+    );
+    // -----------------STATS RELATED API END ----------------
+
     // -----------------REVIEWS RELATED API END----------------
     app.get("/reviews", async (req, res) => {
       const result = await reviewsCollection.find().toArray();
