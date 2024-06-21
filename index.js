@@ -32,6 +32,7 @@ async function run() {
     const tasksCollection = db.collection("tasks");
     const submissionCollection = db.collection("submission");
     const reviewsCollection = db.collection("reviews");
+    const withDrawCollection = db.collection("withdraw");
 
     // ------------MIDDLEWARES START-----------
     function verifyToken(req, res, next) {
@@ -304,6 +305,15 @@ async function run() {
       return res.send(result);
     });
     // -----------------SUBMISSION RELATED API END----------------
+
+    // -----------------WITHDRAW RELATED API START ----------------
+    app.post("/withdraw", verifyToken, verifyWorker, async (req, res) => {
+      const data = req.body;
+
+      const result = await withDrawCollection.insertOne(data);
+      return res.send(result);
+    });
+    // -----------------WITHDRAW RELATED API END ----------------
 
     // -----------------REVIEWS RELATED API END----------------
     app.get("/reviews", async (req, res) => {
