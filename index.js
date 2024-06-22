@@ -114,7 +114,7 @@ async function run() {
 
     // ----------------USER RELATED API START-------------
     // get user(s) by query
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const userRole = req.query?.role;
 
       // if role exist then return user of that specific role
@@ -129,7 +129,7 @@ async function run() {
     });
 
     // get user role by id
-    app.get("/users/:email", async (req, res) => {
+    app.get("/users/:email", verifyToken, async (req, res) => {
       const { email } = req.params;
       const query = { email: email };
 
@@ -159,24 +159,26 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/users/:id", async (req, res) => {
+    // update user role
+    app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const data = req.body;
       const filter = { _id: new ObjectId(id) };
 
-      // if role exist in query then update role
-      if (req.query?.role) {
-        const updatedDoc = { $set: { role: data } };
+      // upate role
+      const updatedDoc = { $set: { role: data.newRole } };
 
-        const result = await usersCollection.updateOne(filter, updatedDoc);
-        res.send(result);
-      } else if (req.query?.coins) {
-        // if coins exist in query then update coins
-        const updatedDoc = { $set: { coins: data } };
+      const result = await usersCollection.updateOne(filter, updatedDoc);
+      res.send(result);
+    });
 
-        const result = await usersCollection.updateOne(filter, updatedDoc);
-        res.send(result);
-      }
+    // delete user
+    app.delete("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
     });
     // ------------------USER RELATED API END------------------
 
