@@ -559,6 +559,19 @@ async function run() {
     });
     // -----------------REVIEWS RELATED API END----------------
 
+    // -----------------TOTAL EARNERS API START----------------
+    app.get("/topEarners", async (req, res) => {
+      const topEarners = await usersCollection
+        .find()
+        .sort({ coins: -1 })
+        .limit(6)
+        .toArray();
+
+      res.send(topEarners);
+    });
+
+    // -----------------TOTAL EARNERS API END----------------
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
