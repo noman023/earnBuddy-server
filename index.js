@@ -41,6 +41,7 @@ async function run() {
     const submissionCollection = db.collection("submission");
     const reviewsCollection = db.collection("reviews");
     const withDrawCollection = db.collection("withdraw");
+    const paymentsCollection = db.collection("payments");
 
     // ------------MIDDLEWARES START-----------
     function verifyToken(req, res, next) {
@@ -477,6 +478,77 @@ async function run() {
         res.send(response);
       }
     );
+
+    // task creator stats
+    app.get(
+      "/creatorStats/:email",
+      verifyToken,
+      verifyTaskCreator,
+      async (req, res) => {
+        const { email } = req.params; // Assuming you have the user's email from the token
+
+        // Get the user's available coins
+        const user = await usersCollection.findOne({ email });
+        const availableCoins = user ? user.coins : 0;
+
+        // Calculate the sum of all pending tasks
+        const pendingTasks = await tasksCollection
+          .aggregate([
+            { $match: { creatorEmail: email, status: "pending" } },
+            { $group: { _id: null, total: { $sum: "$quantity" } } },
+            { $project: { _id: 0, total: 1 } },
+          ])
+          .toArray();
+
+        // Calculate the total payment paid by the user
+        const totalPayments = await tasksCollection
+          .aggregate([
+            { $match: { creatorEmail: email } },
+            {
+              $group: {
+                _id: null,
+                total: { $sum: { $multiply: ["$quantity", "$payAmount"] } },
+              },
+            },
+            { $project: { _id: 0, total: 1 } },
+          ])
+          .toArray();
+
+        res.send({
+          availableCoins,
+          pendingTasks: pendingTasks.length > 0 ? pendingTasks[0].total : 0,
+          totalPayments: totalPayments.length > 0 ? totalPayments[0].total : 0,
+        });
+      }
+    );
+
+    // admin stats
+    app.get("/adminStats", verifyToken, verifyAdmin, async (req, res) => {
+      // Count total users
+      const totalUsers = await usersCollection.countDocuments();
+
+      // Calculate total coins
+      const totalCoins = await usersCollection
+        .aggregate([
+          { $group: { _id: null, total: { $sum: "$coins" } } },
+          { $project: { _id: 0, total: 1 } },
+        ])
+        .toArray();
+
+      // Calculate total payments
+      const totalPayments = await paymentsCollection
+        .aggregate([
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+          { $project: { _id: 0, total: 1 } },
+        ])
+        .toArray();
+
+      res.send({
+        totalUsers,
+        totalCoins: totalCoins.length > 0 ? totalCoins[0].total : 0,
+        totalPayments: totalPayments.length > 0 ? totalPayments[0].total : 0,
+      });
+    });
     // -----------------STATS RELATED API END ----------------
 
     // -----------------REVIEWS RELATED API END----------------
