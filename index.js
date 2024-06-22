@@ -321,6 +321,66 @@ async function run() {
 
       return res.send(result);
     });
+
+    // change status to reject
+    app.patch(
+      "/subReject/:id",
+      verifyToken,
+      verifyTaskCreator,
+      async (req, res) => {
+        const { id } = req.params;
+        const query = { _id: id };
+
+        const updateDoc = {
+          $set: {
+            status: "rejected",
+          },
+        };
+
+        const result = await submissionCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
+
+    // change task status to approve and user coins increase
+    app.patch(
+      "/subApprove/:id",
+      verifyToken,
+      verifyTaskCreator,
+      async (req, res) => {
+        const { id } = req.params;
+        const query = { _id: id };
+
+        // find task
+        const task = await submissionCollection.findOne(query);
+
+        // find worker
+        const filter = { email: task.workerEmail };
+        const worker = await usersCollection.findOne(filter);
+
+        // update worker coins
+        const workerCoinUpdate = {
+          $set: {
+            coins: worker.coins + task.payAmount,
+          },
+        };
+        await usersCollection.updateOne(filter, workerCoinUpdate);
+
+        // update task status
+        const taskStatusUpdate = {
+          $set: {
+            status: "approved",
+          },
+        };
+
+        const result = await submissionCollection.updateOne(
+          query,
+          taskStatusUpdate
+        );
+
+        res.send(result);
+      }
+    );
     // -----------------SUBMISSION RELATED API END----------------
 
     // -----------------WITHDRAW RELATED API START ----------------
