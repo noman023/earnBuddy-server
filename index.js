@@ -301,6 +301,20 @@ async function run() {
       return res.send(submissions);
     });
 
+    // get all submit of worker
+    app.get(
+      "/submissionAll/:email",
+      verifyToken,
+      verifyWorker,
+      async (req, res) => {
+        const { email } = req.params;
+        const query = { workerEmail: email };
+
+        const submissions = await submissionCollection.find(query).toArray();
+        return res.send(submissions);
+      }
+    );
+
     app.post("/submission", verifyToken, verifyWorker, async (req, res) => {
       const data = req.body;
       const result = await submissionCollection.insertOne(data);
