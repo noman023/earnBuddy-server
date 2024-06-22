@@ -442,24 +442,43 @@ async function run() {
     // -----------------WITHDRAW RELATED API END ----------------
 
     // -----------------PAYMENTS RELATED API START ----------------
-    app.post("/create-payment-intent", async (req, res) => {
-      const { price } = req.body;
-      const amount = parseInt(price * 100);
+    app.post(
+      "/create-payment-intent",
+      verifyToken,
+      verifyTaskCreator,
+      async (req, res) => {
+        const { price } = req.body;
+        const amount = parseInt(price * 100);
 
-      // Create a PaymentIntent with the order amount and currency
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
+        // Create a PaymentIntent with the order amount and currency
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: "usd",
+          payment_method_types: ["card"],
+        });
 
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
-    });
+        res.send({
+          clientSecret: paymentIntent.client_secret,
+        });
+      }
+    );
+
+    // get user payments data
+    app.get(
+      "/payments/:email",
+      verifyToken,
+      verifyTaskCreator,
+      async (req, res) => {
+        const { email } = req.params;
+        const query = { email: email };
+
+        const result = await paymentsCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
 
     // add payment data and update user coins
-    app.post("/payments", async (req, res) => {
+    app.post("/payments", verifyToken, verifyTaskCreator, async (req, res) => {
       const data = req.body;
       const query = { email: data.email };
 
