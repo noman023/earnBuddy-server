@@ -441,6 +441,44 @@ async function run() {
 
     // -----------------WITHDRAW RELATED API END ----------------
 
+    // -----------------PAYMENTS RELATED API START ----------------
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // add payment data and update user coins
+    app.post("/payments", async (req, res) => {
+      const data = req.body;
+      const query = { email: data.email };
+
+      const user = await usersCollection.findOne(query);
+
+      // update user coins
+      const updatedDoc = {
+        $set: {
+          coins: user.coins + data.coins,
+        },
+      };
+      await usersCollection.updateOne(query, updatedDoc);
+
+      // add payment data
+      const result = await paymentsCollection.insertOne(data);
+      res.send(result);
+    });
+    // -----------------PAYMENTS RELATED API END ----------------
+
     // -----------------STATS RELATED API START ----------------
     // get worker stats
     app.get(
@@ -486,7 +524,7 @@ async function run() {
       verifyToken,
       verifyTaskCreator,
       async (req, res) => {
-        const { email } = req.params; // Assuming you have the user's email from the token
+        const { email } = req.params;
 
         // Get the user's available coins
         const user = await usersCollection.findOne({ email });
@@ -572,24 +610,6 @@ async function run() {
     });
 
     // -----------------TOTAL EARNERS API END----------------
-
-    // -----------------PAYMENT START----------------
-    app.post("/create-payment-intent", async (req, res) => {
-      const { price } = req.body;
-      const amount = parseInt(price * 100);
-
-      // Create a PaymentIntent with the order amount and currency
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: amount,
-        currency: "usd",
-        payment_method_types: ["card"],
-      });
-
-      res.send({
-        clientSecret: paymentIntent.client_secret,
-      });
-    });
-    // -----------------PAYMENT END----------------
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
