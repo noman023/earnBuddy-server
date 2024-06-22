@@ -384,12 +384,49 @@ async function run() {
     // -----------------SUBMISSION RELATED API END----------------
 
     // -----------------WITHDRAW RELATED API START ----------------
+    app.get("/withdraw", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await withDrawCollection.find().toArray();
+      return res.send(result);
+    });
+
     app.post("/withdraw", verifyToken, verifyWorker, async (req, res) => {
       const data = req.body;
 
       const result = await withDrawCollection.insertOne(data);
       return res.send(result);
     });
+
+    // delete withdraw post and decrease user coins
+    app.delete(
+      "/withdrawApprove/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const { id } = req.params;
+        const query = { _id: new ObjectId(id) };
+
+        // Find the withdrawal post by ID
+        const withdrawPost = await withDrawCollection.findOne(query);
+
+        // Find the user by email
+        const userQuery = { email: withdrawPost.workerEmail };
+        const user = await usersCollection.findOne(userQuery);
+
+        // Decrease the user's coins by the withdrawal amount
+        const newCoinBalance = user.coins - withdrawPost.withdrawCoin;
+        const updateUserDoc = {
+          $set: {
+            coins: newCoinBalance,
+          },
+        };
+        await usersCollection.updateOne(userQuery, updateUserDoc);
+
+        // Delete the withdrawal post
+        const result = await withDrawCollection.deleteOne(query);
+        res.send(result);
+      }
+    );
+
     // -----------------WITHDRAW RELATED API END ----------------
 
     // -----------------STATS RELATED API START ----------------
