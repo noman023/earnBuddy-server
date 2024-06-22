@@ -559,13 +559,13 @@ async function run() {
           .toArray();
 
         // Calculate the total payment paid by the user
-        const totalPayments = await tasksCollection
+        const totalPayments = await paymentsCollection
           .aggregate([
-            { $match: { creatorEmail: email } },
+            { $match: { email: email } },
             {
               $group: {
                 _id: null,
-                total: { $sum: { $multiply: ["$quantity", "$payAmount"] } },
+                total: { $sum: "$price" },
               },
             },
             { $project: { _id: 0, total: 1 } },
@@ -596,7 +596,7 @@ async function run() {
       // Calculate total payments
       const totalPayments = await paymentsCollection
         .aggregate([
-          { $group: { _id: null, total: { $sum: "$amount" } } },
+          { $group: { _id: null, total: { $sum: "$price" } } },
           { $project: { _id: 0, total: 1 } },
         ])
         .toArray();
